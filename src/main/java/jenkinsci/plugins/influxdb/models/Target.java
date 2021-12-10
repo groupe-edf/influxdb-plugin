@@ -1,19 +1,34 @@
 package jenkinsci.plugins.influxdb.models;
 
+import com.cloudbees.plugins.credentials.CredentialsMatchers;
+import com.cloudbees.plugins.credentials.CredentialsProvider;
+import com.cloudbees.plugins.credentials.common.StandardCredentials;
 import com.cloudbees.plugins.credentials.common.StandardListBoxModel;
 import com.cloudbees.plugins.credentials.common.StandardUsernameListBoxModel;
 import com.cloudbees.plugins.credentials.common.StandardUsernamePasswordCredentials;
 import com.cloudbees.plugins.credentials.domains.URIRequirementBuilder;
+import com.influxdb.client.InfluxDBClient;
+import com.influxdb.client.InfluxDBClientFactory;
+import com.influxdb.client.InfluxDBClientOptions;
+import com.influxdb.client.domain.User;
+import com.influxdb.exceptions.InfluxException;
+
 import hudson.Extension;
 import hudson.model.AbstractDescribableImpl;
 import hudson.model.Descriptor;
+import hudson.model.Item;
 import hudson.security.ACL;
 import hudson.util.FormValidation;
 import hudson.util.ListBoxModel;
 import jenkins.model.Jenkins;
+
+import java.util.List;
+
 import org.apache.commons.lang3.builder.ToStringBuilder;
+import org.kohsuke.stapler.AncestorInPath;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.QueryParameter;
+import org.kohsuke.stapler.verb.POST;
 
 public class Target extends AbstractDescribableImpl<Target> implements java.io.Serializable {
 
@@ -30,7 +45,7 @@ public class Target extends AbstractDescribableImpl<Target> implements java.io.S
     private String globalListenerFilter;
 
     public Target() {
-        //nop
+        // nop
     }
 
     @DataBoundConstructor
@@ -140,42 +155,77 @@ public class Target extends AbstractDescribableImpl<Target> implements java.io.S
 
     @Override
     public String toString() {
-        return new ToStringBuilder(this)
-                .append("description", description)
-                .append("url", url)
-                .append("credentialsId", credentialsId)
-                .append("database", database)
-                .append("organization", organization)
-                .toString();
+        return new ToStringBuilder(this).append("description", description).append("url", url)
+                .append("credentialsId", credentialsId).append("database", database)
+                .append("organization", organization).toString();
     }
 
     @Extension
     public static class DescriptorImpl extends Descriptor<Target> {
 
-        public ListBoxModel doFillCredentialsIdItems(@QueryParameter String url,
-                                                     @QueryParameter String credentialsId) {
+        @POST
+        public ListBoxModel doFillCredentialsIdItems(@QueryParameter String url, @QueryParameter String credentialsId) {
             if (!Jenkins.get().hasPermission(Jenkins.ADMINISTER)) {
                 return new StandardListBoxModel().includeCurrentValue(credentialsId);
             }
-            return new StandardUsernameListBoxModel()
-                    .includeEmptyValue()
-                    .includeAs(ACL.SYSTEM,
-                            Jenkins.get(),
-                            StandardUsernamePasswordCredentials.class,
-                            URIRequirementBuilder.fromUri(url).build())
+            return new StandardUsernameListBoxModel().includeEmptyValue().includeAs(ACL.SYSTEM, Jenkins.get(),
+                    StandardUsernamePasswordCredentials.class, URIRequirementBuilder.fromUri(url).build())
                     .includeCurrentValue(credentialsId);
         }
 
+        @POST
         public FormValidation doCheckDescription(@QueryParameter String value) {
             return FormValidation.validateRequired(value);
         }
 
+        @POST
         public FormValidation doCheckUrl(@QueryParameter String value) {
             return FormValidation.validateRequired(value);
         }
 
+        @POST
         public FormValidation doCheckDatabase(@QueryParameter String value) {
             return FormValidation.validateRequired(value);
+        }
+
+        /**
+         * Verify the connection to the InfluxDb 
+         * @param host
+         * @param port
+         * @param credentialsId
+         * @param context
+         * @return ok if connection, ko if error
+         */
+        @POST
+        public FormValidation doVerifyConnection(@QueryParameter String url, @QueryParameter String credentialsId, @QueryParameter String organization,
+                @QueryParameter String database, @QueryParameter String retentionPolicy, @AncestorInPath Item context) {
+            InfluxDBClient influxDB;
+            List<StandardUsernamePasswordCredentials> lookupCredentials = CredentialsProvider.lookupCredentials(
+                    StandardUsernamePasswordCredentials.class,
+                    context,
+                    ACL.SYSTEM,
+                    URIRequirementBuilder.fromUri(url).build());
+            StandardUsernamePasswordCredentials credentials = CredentialsMatchers.firstOrNull(lookupCredentials, CredentialsMatchers.withId(credentialsId));
+            if (organization != null && !organization.trim().isEmpty() && credentials != null){
+                InfluxDBClientOptions options = InfluxDBClientOptions.builder()
+                        .url(url)
+                        .authenticate(credentials.getUsername(), credentials.getPassword().getPlainText().toCharArray())
+                        .org(organization)
+                        .bucket(database)
+                        .build();
+                influxDB = InfluxDBClientFactory.create(options);
+            } else {
+                influxDB = credentials == null ?
+                    InfluxDBClientFactory.createV1(url, "", "".toCharArray(), database, retentionPolicy) :
+                    InfluxDBClientFactory.createV1(url, credentials.getUsername(), credentials.getPassword().getPlainText().toCharArray(), database, retentionPolicy);
+            }
+            try {
+                User user = influxDB.getUsersApi().me();
+                return FormValidation.ok("Connection success with {}", user.getName());
+            }catch(InfluxException e) {
+                return FormValidation.error(e, "Connection Failed");
+            }
+            
         }
     }
 }
