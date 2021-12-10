@@ -9,3 +9,6 @@ release.properties
 *.iml
 .DS_Store
 changes.txt
+.classpath
+.project
+.settings/
