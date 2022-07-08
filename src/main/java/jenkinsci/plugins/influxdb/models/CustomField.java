@@ -47,6 +47,14 @@ public class CustomField extends AbstractDescribableImpl<CustomField> {
     @Extension
     public static class DescriptorImpl extends Descriptor<CustomField> {
 
+        /**
+         * {@inheritDoc}
+         */
+        @Override
+        public String getDisplayName() {
+            return "fields";
+        }
+
         @POST
         public FormValidation doCheckName(@QueryParameter String name) {
             return FormValidation.validateRequired(name);

@@ -6,6 +6,7 @@ import org.apache.commons.lang3.builder.ToStringBuilder;
 import org.jenkinsci.plugins.plaincredentials.StringCredentials;
 import org.kohsuke.stapler.AncestorInPath;
 import org.kohsuke.stapler.DataBoundConstructor;
+import org.kohsuke.stapler.DataBoundSetter;
 import org.kohsuke.stapler.QueryParameter;
 import org.kohsuke.stapler.verb.POST;
 
@@ -42,6 +43,7 @@ public class Target extends AbstractDescribableImpl<Target> implements java.io.S
     private boolean usingJenkinsProxy;
     private boolean globalListener;
     private String globalListenerFilter;
+    private List<CustomPoint> customPoints;
 
     public Target() {
         //nop
@@ -50,7 +52,7 @@ public class Target extends AbstractDescribableImpl<Target> implements java.io.S
     @DataBoundConstructor
     public Target(String description, String url, String credentialsId, String organization, String database,
             String retentionPolicy, boolean jobScheduledTimeAsPointsTimestamp, boolean exposeExceptions,
-            boolean usingJenkinsProxy, boolean globalListener, String globalListenerFilter) {
+            boolean usingJenkinsProxy, boolean globalListener, String globalListenerFilter, List<CustomPoint> customPoints) {
         this.description = description;
         this.url = url;
         this.credentialsId = credentialsId;
@@ -62,6 +64,7 @@ public class Target extends AbstractDescribableImpl<Target> implements java.io.S
         this.usingJenkinsProxy = usingJenkinsProxy;
         this.globalListener = globalListener;
         this.globalListenerFilter = globalListenerFilter;
+        this.customPoints = customPoints;
     }
 
     public String getDescription() {
@@ -150,6 +153,15 @@ public class Target extends AbstractDescribableImpl<Target> implements java.io.S
 
     public void setGlobalListenerFilter(String globalListenerFilter) {
         this.globalListenerFilter = globalListenerFilter;
+    }
+
+    public List<CustomPoint> getCustomPoints() {
+        return customPoints;
+    }
+
+    @DataBoundSetter
+    public void setCustomPoints(List<CustomPoint> customPoints) {
+        this.customPoints = customPoints;
     }
 
     @Override

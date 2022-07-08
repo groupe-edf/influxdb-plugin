@@ -15,11 +15,11 @@ import hudson.util.FormValidation;
 public class CustomPoint extends AbstractDescribableImpl<CustomPoint> {
 
     private String name;
-    private List<CustomField> fields;
+    private List<CustomField> customFields;
 
-    public CustomPoint(String name, List<CustomField> fields) {
+    public CustomPoint(String name, List<CustomField> customFields) {
         this.name = name;
-        this.fields = fields;
+        this.customFields = customFields;
     }
 
     public String getName() {
@@ -31,17 +31,24 @@ public class CustomPoint extends AbstractDescribableImpl<CustomPoint> {
         this.name = name;
     }
 
-    public List<CustomField> getFields() {
-        return fields;
+    public List<CustomField> getCustomFields() {
+        return customFields;
     }
 
-    @DataBoundSetter
-    public void setFields(List<CustomField> fields) {
-        this.fields = fields;
+    public void setCustomFields(List<CustomField> customFields) {
+        this.customFields = customFields;
     }
 
     @Extension
     public static class DescriptorImpl extends Descriptor<CustomPoint> {
+
+        /**
+         * {@inheritDoc}
+         */
+        @Override
+        public String getDisplayName() {
+            return "points";
+        }
 
         @POST
         public FormValidation doCheckName(@QueryParameter String name) {
