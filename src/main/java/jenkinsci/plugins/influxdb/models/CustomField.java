@@ -14,7 +14,7 @@ import hudson.model.AbstractDescribableImpl;
 import hudson.model.Descriptor;
 import hudson.util.FormValidation;
 
-public class CustomField extends AbstractDescribableImpl<CustomField> {
+public class CustomField extends AbstractDescribableImpl<CustomField> implements java.io.Serializable {
 
     private String name;
     private String regex;

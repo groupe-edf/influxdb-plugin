@@ -12,7 +12,7 @@ import hudson.model.AbstractDescribableImpl;
 import hudson.model.Descriptor;
 import hudson.util.FormValidation;
 
-public class CustomPoint extends AbstractDescribableImpl<CustomPoint> {
+public class CustomPoint extends AbstractDescribableImpl<CustomPoint> implements java.io.Serializable {
 
     private String name;
     private List<CustomField> customFields;
