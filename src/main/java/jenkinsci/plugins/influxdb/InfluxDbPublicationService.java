@@ -31,6 +31,7 @@ import jenkinsci.plugins.influxdb.generators.CoberturaPointGenerator;
 import jenkinsci.plugins.influxdb.generators.CustomDataMapPointGenerator;
 import jenkinsci.plugins.influxdb.generators.CustomDataPointGenerator;
 import jenkinsci.plugins.influxdb.generators.GitPointGenerator;
+import jenkinsci.plugins.influxdb.generators.GlobalCustomPointGenerator;
 import jenkinsci.plugins.influxdb.generators.JUnitPointGenerator;
 import jenkinsci.plugins.influxdb.generators.JacocoPointGenerator;
 import jenkinsci.plugins.influxdb.generators.JenkinsBasePointGenerator;
@@ -192,6 +193,14 @@ public class InfluxDbPublicationService {
 
         // Points to write
         List<Point> pointsToWrite = new ArrayList<>();
+
+        GlobalCustomPointGenerator customGen = new GlobalCustomPointGenerator(build, listener, measurementRenderer, timestamp, jenkinsEnvParameterTag, customPrefix, selectedTargets.get(0).getCustomPoints());
+        if (customGen.hasReport()) {
+            listener.getLogger().println("[InfluxDB Plugin] Custom point found. Writing to InfluxDB...");
+                addPoints(pointsToWrite, customGen, listener);
+        } else {
+            logger.log(Level.FINE, "Data source empty: Custom Point");
+        }
 
         AgentPointGenerator agentGen = new AgentPointGenerator(build, listener, measurementRenderer, timestamp, jenkinsEnvParameterTag, customPrefix);
         addPoints(pointsToWrite, agentGen, listener);
