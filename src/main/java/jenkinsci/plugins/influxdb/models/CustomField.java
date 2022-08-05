@@ -18,6 +18,7 @@ public class CustomField extends AbstractDescribableImpl<CustomField> implements
 
     private String name;
     private String regex;
+    private String value;
 
     @DataBoundConstructor
     public CustomField(String name, String regex) {
@@ -42,6 +43,14 @@ public class CustomField extends AbstractDescribableImpl<CustomField> implements
     @DataBoundSetter
     public void setRegex(String regex) {
         this.regex = regex;
+    }
+
+    public String getValue() {
+        return value;
+    }
+
+    public void setValue(String value) {
+        this.value = value;
     }
 
     @Extension
