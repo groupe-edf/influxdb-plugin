@@ -11,6 +11,7 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
 
+import org.apache.commons.collections.CollectionUtils;
 import org.jenkinsci.plugins.plaincredentials.StringCredentials;
 
 import com.cloudbees.plugins.credentials.CredentialsProvider;
@@ -193,14 +194,7 @@ public class InfluxDbPublicationService {
 
         // Points to write
         List<Point> pointsToWrite = new ArrayList<>();
-
-        GlobalCustomPointGenerator customGen = new GlobalCustomPointGenerator(build, listener, measurementRenderer, timestamp, jenkinsEnvParameterTag, customPrefix, selectedTargets.get(0).getCustomPoints());
-        if (customGen.hasReport()) {
-            listener.getLogger().println("[InfluxDB Plugin] Custom point found. Writing to InfluxDB...");
-                addPoints(pointsToWrite, customGen, listener);
-        } else {
-            logger.log(Level.FINE, "Data source empty: Custom Point");
-        }
+        List<Point> customPoints = new ArrayList<>();
 
         AgentPointGenerator agentGen = new AgentPointGenerator(build, listener, measurementRenderer, timestamp, jenkinsEnvParameterTag, customPrefix);
         addPoints(pointsToWrite, agentGen, listener);
@@ -317,6 +311,20 @@ public class InfluxDbPublicationService {
         }
 
         for (Target target : selectedTargets) {
+
+            if(CollectionUtils.isNotEmpty(customPoints)) {
+                pointsToWrite.removeAll(customPoints);
+            }
+            customPoints.clear();
+            GlobalCustomPointGenerator customGen = new GlobalCustomPointGenerator(build, listener, measurementRenderer, timestamp, jenkinsEnvParameterTag, customPrefix, target.getCustomPoints());
+            if (customGen.hasReport()) {
+                listener.getLogger().println("[InfluxDB Plugin] Custom point found. Writing to InfluxDB...");
+                    addPoints(customPoints, customGen, listener);
+                    pointsToWrite.addAll(customPoints);
+            } else {
+                logger.log(Level.FINE, "Data source empty: Custom Point");
+            }
+
             try {
                 new URL(target.getUrl());
             } catch (MalformedURLException e) {
