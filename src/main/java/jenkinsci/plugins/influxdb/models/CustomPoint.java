@@ -3,6 +3,7 @@ package jenkinsci.plugins.influxdb.models;
 import java.util.List;
 
 import org.apache.commons.collections.CollectionUtils;
+import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.DataBoundSetter;
 import org.kohsuke.stapler.QueryParameter;
 import org.kohsuke.stapler.verb.POST;
@@ -17,6 +18,7 @@ public class CustomPoint extends AbstractDescribableImpl<CustomPoint> implements
     private String name;
     private List<CustomField> customFields;
 
+    @DataBoundConstructor
     public CustomPoint(String name, List<CustomField> customFields) {
         this.name = name;
         this.customFields = customFields;
