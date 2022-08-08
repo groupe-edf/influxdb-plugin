@@ -314,8 +314,8 @@ public class InfluxDbPublicationService {
 
             if(CollectionUtils.isNotEmpty(customPoints)) {
                 pointsToWrite.removeAll(customPoints);
+                customPoints.clear();
             }
-            customPoints.clear();
             GlobalCustomPointGenerator customGen = new GlobalCustomPointGenerator(build, listener, measurementRenderer, timestamp, jenkinsEnvParameterTag, customPrefix, target.getCustomPoints());
             if (customGen.hasReport()) {
                 listener.getLogger().println("[InfluxDB Plugin] Custom point found. Writing to InfluxDB...");
