@@ -22,7 +22,6 @@ import hudson.model.Cause.RemoteCause;
 import hudson.model.Cause.UpstreamCause;
 import hudson.model.Cause.UserIdCause;
 import hudson.tasks.test.AbstractTestResultAction;
-import hudson.triggers.TimerTrigger.TimerTriggerCause;
 import jenkinsci.plugins.influxdb.renderer.ProjectNameRenderer;
 
 public class JenkinsBasePointGenerator extends AbstractPointGenerator {
@@ -101,7 +100,7 @@ public class JenkinsBasePointGenerator extends AbstractPointGenerator {
             ordinal = buildResult.ordinal;
         }
 
-        String buildCause = getBuildCause();
+        String[] causeDatas = getCauseDatas();
 
         Point point = buildPoint(measurementName, customPrefix, build);
         point.addField(BUILD_TIME, build.getDuration() == 0 ? dt : build.getDuration())
@@ -117,8 +116,8 @@ public class JenkinsBasePointGenerator extends AbstractPointGenerator {
             .addField(PROJECT_BUILD_HEALTH, build.getParent().getBuildHealth().getScore())
             .addField(PROJECT_LAST_SUCCESSFUL, getLastSuccessfulBuild())
             .addField(PROJECT_LAST_STABLE, getLastStableBuild())
-            .addField(BUILD_CAUSER , getCauseShortDescription())
-            .addField(BUILD_CAUSE, buildCause)
+            .addField(BUILD_CAUSER , causeDatas[0])
+            .addField(BUILD_CAUSE, causeDatas[1])
             .addTag(BUILD_RESULT, result);
 
         if (hasTestResults(build)) {
@@ -167,30 +166,28 @@ public class JenkinsBasePointGenerator extends AbstractPointGenerator {
         }
     }
 
-    private String getBuildCause() {
-        String buildCause = "";
+    private String[] getCauseDatas() {
+        String buildCauser = "";
         StringJoiner triggers = new StringJoiner(", ");
         try {
             for (Cause cause : build.getCauses()) {
                 triggers.add(cause.getClass().getSimpleName());
                 if (cause instanceof UserIdCause) {
-                    buildCause = ((UserIdCause) cause).getUserId();
+                    buildCauser = ((UserIdCause) cause).getUserId();
                 } else if (cause.getClass().getName().contains("GitlabWebhookCause")) {
-                    buildCause = build.getEnvironment(listener).get("gitlabUserUsername");
-                } else if (cause instanceof TimerTriggerCause) {
-                  //TODO : TimerTriggerCause
+                    buildCauser = build.getEnvironment(listener).get("gitlabUserUsername");
                 } else if (cause instanceof UpstreamCause) {
                     UpstreamCause upstreamCause = (UpstreamCause) cause;
-                    buildCause = upstreamCause.getUpstreamProject()+ "#" + upstreamCause.getUpstreamBuild();
+                    buildCauser = upstreamCause.getUpstreamProject()+ "#" + upstreamCause.getUpstreamBuild();
                 } else if (cause instanceof RemoteCause) {
-                    buildCause = ((RemoteCause) cause).getAddr();
+                    buildCauser = ((RemoteCause) cause).getAddr();
                 } else {
-                    buildCause = cause.getShortDescription();
+                    buildCauser = cause.getShortDescription();
                 }
             }
-            return buildCause;
+            return new String[] { buildCauser, triggers.toString() };
         } catch (Exception e) {
-            return "";
+            return new String[] { "", "" };
         }
     }
 
